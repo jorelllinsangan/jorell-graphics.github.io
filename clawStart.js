@@ -58,34 +58,28 @@ function drawClawMachine() {
 	var refPointMaterial = new THREE.MeshLambertMaterial();
 	refPointMaterial.color.setRGB(1,0,0);
 
-	var base;
-
-	// This is where the model gets created. Add the appropriate geometry to create your machine
-	// You are not limited to using BoxGeometry, and likely want to use other types of geometry for pieces of your submission
-	// Note that the actual shape, size and other factors are up to you, provided constraints listed in the assignment description are met
-
-
-    // The base
-	base = new THREE.Mesh( new THREE.BoxGeometry( 300, 400, 300 ), bodyMaterial );
-	base.position.x = 0;
-	base.position.y = 250;
-	base.position.z = 0;
-
-	scene.add( base );
-
-
+	generateBase(scene, bodyMaterial);
     generateStands(scene, bodyMaterial);
     generateWalls(scene, bodyMaterial);
     generateClawMechanism(scene);
-    generateRope(scene);
     generateControlPanel(scene, bodyMaterial);
 
-    var refPoint = new THREE.Mesh(new THREE.BoxGeometry(10,10,10), refPointMaterial);
-    refPoint.position.x = 0;
-    refPoint.position.y = 0;
-    refPoint.position.z = 145;
+}
 
-    scene.add(refPoint);
+function generateBase(scene, bodyMaterial) {
+    var base;
+
+    // This is where the model gets created. Add the appropriate geometry to create your machine
+    // You are not limited to using BoxGeometry, and likely want to use other types of geometry for pieces of your submission
+    // Note that the actual shape, size and other factors are up to you, provided constraints listed in the assignment description are met
+
+    // The base
+    base = new THREE.Mesh( new THREE.BoxGeometry( 300, 400, 300 ), bodyMaterial );
+    base.position.x = 0;
+    base.position.y = 250;
+    base.position.z = 0;
+
+    scene.add( base );
 }
 
 function generateStands(scene, bodyMaterial) {
@@ -102,55 +96,6 @@ function generateStands(scene, bodyMaterial) {
     }
 }
 
-function generateClawMechanism (scene) {
-    var trackMaterial = new THREE.MeshLambertMaterial({color: 0x000000});
-    var crossbarMaterial = new THREE.MeshLambertMaterial({color: 0xfff000});
-    var sliderMaterial = new THREE.MeshLambertMaterial({color: 0x000fff});
-    var ropeMaterial = new THREE.MeshLambertMaterial({color: 0xf0f0f0});
-
-    var track1 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
-    var track2 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
-    track1.add(track2);
-    track1.position.set(130, 820, 0);
-    track2.position.set(-260, 0, 0);
-
-    crossbar = new THREE.Mesh(new THREE.BoxGeometry(260, 10, 10), crossbarMaterial);
-    crossbar.position.set(-130, 15, 0);
-
-    slider = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), sliderMaterial);
-    slider.position.set(0, -10, 0);
-    crossbar.add(slider);
-
-    track1.add(crossbar);
-
-    scene.add(track1);
-}
-
-function generateRope (scene) {
-    var ropeNumSegments = 10;
-    var ropeLength = 4;
-    var ropeMass = 3;
-    var ropePos = slider.position.clone();
-    ropePos.y += 5;
-    var segmentLength = ropeLength / ropeNumSegments;
-    var ropeGeometry = new THREE.BufferGeometry();
-    var ropeMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
-    var ropePositions = [];
-    var ropeIndices = [];
-    for ( var i = 0; i < ropeNumSegments + 1; i++ ) {
-        ropePositions.push( ropePos.x, ropePos.y + i * segmentLength, ropePos.z );
-    }
-    for ( var i = 0; i < ropeNumSegments; i++ ) {
-        ropeIndices.push( i, i + 1 );
-    }
-    ropeGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( ropeIndices ), 1 ) );
-    ropeGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( ropePositions ), 3 ) );
-    ropeGeometry.computeBoundingSphere();
-    rope = new THREE.LineSegments( ropeGeometry, ropeMaterial );
-    rope.castShadow = true;
-    rope.receiveShadow = true;
-    scene.add( rope );
-}
 function generateWalls(scene) {
     var wallMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, transparent: true, opacity: 0.5})
 
@@ -176,6 +121,35 @@ function generateWalls(scene) {
 
     scene.add(wall);
 
+}
+
+function generateClawMechanism (scene) {
+    var trackMaterial = new THREE.MeshLambertMaterial({color: 0x000000});
+    var crossbarMaterial = new THREE.MeshLambertMaterial({color: 0xfff000});
+    var sliderMaterial = new THREE.MeshLambertMaterial({color: 0x000fff});
+    var clawShaftMaterial = new THREE.MeshLambertMaterial({color: 0xf00000});
+
+    var track1 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
+    var track2 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
+    track1.add(track2);
+    track1.position.set(130, 820, 0);
+    track2.position.set(-260, 0, 0);
+
+    crossbar = new THREE.Mesh(new THREE.BoxGeometry(260, 10, 10), crossbarMaterial);
+    crossbar.position.set(-130, 15, 0);
+
+    slider = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), sliderMaterial);
+    slider.position.set(0, -10, 0);
+    crossbar.add(slider);
+
+    clawShaft = new THREE.Mesh(new THREE.BoxGeometry(5, 100, 5), clawShaftMaterial)
+    clawShaft.position.set(0,-55,0);
+    slider.add(clawShaft);
+
+
+    track1.add(crossbar);
+
+    scene.add(track1);
 }
 
 function generateControlPanel(scene, bodyMaterial) {
@@ -230,7 +204,6 @@ document.onkeydown = (key) => {
             break;
         case 32:
             dropClaw();
-            resetClaw();
             break;
     }
 }
@@ -238,14 +211,44 @@ document.onkeydown = (key) => {
 document.onkeyup = (e) => {
     baseJoystick.rotation.set(Math.PI/4, 0, 0);
 }
+
 /*
 A sequence of animations is needed. Can't just do a for loop
  */
 function dropClaw() {
-    // first drop claw..
-    // close claw
-    // then move claw over to drop zone
-    // release claw
+
+    console.log(clawShaft.scale.clone());
+    var scale = {yScale: clawShaft.scale.y, yPos: clawShaft.position.y };
+    var targetScale = { yScale: 2.5 , yPos: -125 };
+    var tween = new TWEEN.Tween(scale).to(targetScale, 3000);
+
+    tween.onUpdate(() => {
+        clawShaft.scale.y = scale.yScale;
+        clawShaft.position.y = scale.yPos
+    })
+
+    tween.onComplete(() => {
+        deliverPrize();
+    })
+
+    tween.start();
+}
+
+function deliverPrize () {
+    var position = {x: slider.position.x, z: crossbar.position.z };
+    var target = {x: -75, z: 100 };
+    var tween = new TWEEN.Tween(position).to(target, 500);
+
+    tween.onUpdate(() => {
+       crossbar.position.z = position.z;
+       slider.position.x = position.x;
+    });
+
+    tween.onComplete(() => {
+        resetClaw();
+    });
+
+    tween.start();
 }
 
 function resetClaw() {
