@@ -76,7 +76,9 @@ function drawClawMachine() {
 
     generateStands(scene, bodyMaterial);
     generateWalls(scene, bodyMaterial);
-	generateControlPanel(scene, bodyMaterial);
+    generateClawMechanism(scene);
+    generateRope(scene);
+    generateControlPanel(scene, bodyMaterial);
 
     var refPoint = new THREE.Mesh(new THREE.BoxGeometry(10,10,10), refPointMaterial);
     refPoint.position.x = 0;
@@ -100,7 +102,56 @@ function generateStands(scene, bodyMaterial) {
     }
 }
 
-function generateWalls(scene, bodyMaterial) {
+function generateClawMechanism (scene) {
+    var trackMaterial = new THREE.MeshLambertMaterial({color: 0x000000});
+    var crossbarMaterial = new THREE.MeshLambertMaterial({color: 0xfff000});
+    var sliderMaterial = new THREE.MeshLambertMaterial({color: 0x000fff});
+    var ropeMaterial = new THREE.MeshLambertMaterial({color: 0xf0f0f0});
+
+    var track1 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
+    var track2 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
+    track1.add(track2);
+    track1.position.set(130, 820, 0);
+    track2.position.set(-260, 0, 0);
+
+    crossbar = new THREE.Mesh(new THREE.BoxGeometry(260, 10, 10), crossbarMaterial);
+    crossbar.position.set(-130, 15, 0);
+
+    slider = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), sliderMaterial);
+    slider.position.set(0, -10, 0);
+    crossbar.add(slider);
+
+    track1.add(crossbar);
+
+    scene.add(track1);
+}
+
+function generateRope (scene) {
+    var ropeNumSegments = 10;
+    var ropeLength = 4;
+    var ropeMass = 3;
+    var ropePos = slider.position.clone();
+    ropePos.y += 5;
+    var segmentLength = ropeLength / ropeNumSegments;
+    var ropeGeometry = new THREE.BufferGeometry();
+    var ropeMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+    var ropePositions = [];
+    var ropeIndices = [];
+    for ( var i = 0; i < ropeNumSegments + 1; i++ ) {
+        ropePositions.push( ropePos.x, ropePos.y + i * segmentLength, ropePos.z );
+    }
+    for ( var i = 0; i < ropeNumSegments; i++ ) {
+        ropeIndices.push( i, i + 1 );
+    }
+    ropeGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( ropeIndices ), 1 ) );
+    ropeGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( ropePositions ), 3 ) );
+    ropeGeometry.computeBoundingSphere();
+    rope = new THREE.LineSegments( ropeGeometry, ropeMaterial );
+    rope.castShadow = true;
+    rope.receiveShadow = true;
+    scene.add( rope );
+}
+function generateWalls(scene) {
     var wallMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, transparent: true, opacity: 0.5})
 
     var wall = new THREE.Mesh(new THREE.BoxGeometry(200, 400, 5), wallMaterial);
@@ -153,29 +204,57 @@ function generateControlPanel(scene, bodyMaterial) {
 
 document.onkeydown = (key) => {
     console.log(key.keyCode);
+    var crossbarLimit = 90;
+    var sliderLimit = 111;
     switch (key.keyCode) {
         case 87:
             if (baseJoystick.rotation.x > Math.PI/4 - Math.PI/8) baseJoystick.rotation.x -= Math.PI / 8;
+            if (crossbar.position.z > -crossbarLimit) crossbar.translateZ(-3);
             break;
         case 83:
             if (baseJoystick.rotation.x < Math.PI/4 + Math.PI/8) baseJoystick.rotation.x += Math.PI / 8;
+            if (crossbar.position.z < crossbarLimit) crossbar.translateZ(3);
             break;
         case 65:
-            console.log(baseJoystick.rotation.z);
             if (baseJoystick.rotation.z < Math.PI/8) baseJoystick.rotation.z += Math.PI/8;
+            if (slider.position.x > -sliderLimit) slider.translateX(-3);
             break;
         case 68:
             if (baseJoystick.rotation.z > -Math.PI/8) baseJoystick.rotation.z -= Math.PI/8;
+            if (slider.position.x < sliderLimit) slider.translateX(3);
             break;
         case 86:
             egocentric ? resetCamera() : setEgocentric();
             egocentric = !egocentric;
             break;
+        case 32:
+            dropClaw();
+            resetClaw();
     }
 }
 
 document.onkeyup = (e) => {
     baseJoystick.rotation.set(Math.PI/4, 0, 0);
+}
+/*
+A sequence of animations is needed. Can't just do a for loop
+ */
+function dropClaw() {
+    // first drop claw..
+    // close claw
+    // then move claw over to drop zone
+    // release claw
+}
+
+function resetClaw() {
+    console.log(crossbar.position.z);
+    // while (crossbar.position.z != 0) {
+    //     if (crossbar.position.z > 0) {
+    //         crossbar.position.z -= 1;
+    //     } else {
+    //         crossbar.position.z += 1;
+    //     }
+    // }
 }
 
 function setEgocentric() {
@@ -184,8 +263,8 @@ function setEgocentric() {
 }
 
 function resetCamera() {
-    camera.position.set( -800, 600, 500);
-    cameraControls.target.set(4,301,92);
+    camera.position.set( 0, 900, 1000);
+    cameraControls.target.set(4,500,92);
 }
 
 // Initialization. Define the size of the canvas and store the aspect ratio
@@ -211,8 +290,8 @@ function init() {
 	// Moving the camera with the mouse is simple enough - so this is provided. However, note that by default,
 	// the keyboard moves the viewpoint as well
 	cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
-	camera.position.set( -800, 600, 500);
-	cameraControls.target.set(4,301,92);
+	camera.position.set( 0, 900, 1000);
+	cameraControls.target.set(4,500,92);
 }
 
 	// We want our document object model (a javascript / HTML construct) to include our canvas
