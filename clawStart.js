@@ -206,22 +206,23 @@ document.onkeydown = (key) => {
     console.log(key.keyCode);
     var crossbarLimit = 90;
     var sliderLimit = 111;
+    var crossbarSliderMovement = 5;
     switch (key.keyCode) {
         case 87:
             if (baseJoystick.rotation.x > Math.PI/4 - Math.PI/8) baseJoystick.rotation.x -= Math.PI / 8;
-            if (crossbar.position.z > -crossbarLimit) crossbar.translateZ(-3);
+            if (crossbar.position.z > -crossbarLimit) crossbar.translateZ(-crossbarSliderMovement);
             break;
         case 83:
             if (baseJoystick.rotation.x < Math.PI/4 + Math.PI/8) baseJoystick.rotation.x += Math.PI / 8;
-            if (crossbar.position.z < crossbarLimit) crossbar.translateZ(3);
+            if (crossbar.position.z < crossbarLimit) crossbar.translateZ(crossbarSliderMovement);
             break;
         case 65:
             if (baseJoystick.rotation.z < Math.PI/8) baseJoystick.rotation.z += Math.PI/8;
-            if (slider.position.x > -sliderLimit) slider.translateX(-3);
+            if (slider.position.x > -sliderLimit) slider.translateX(-crossbarSliderMovement);
             break;
         case 68:
             if (baseJoystick.rotation.z > -Math.PI/8) baseJoystick.rotation.z -= Math.PI/8;
-            if (slider.position.x < sliderLimit) slider.translateX(3);
+            if (slider.position.x < sliderLimit) slider.translateX(crossbarSliderMovement);
             break;
         case 86:
             egocentric ? resetCamera() : setEgocentric();
@@ -230,6 +231,7 @@ document.onkeydown = (key) => {
         case 32:
             dropClaw();
             resetClaw();
+            break;
     }
 }
 
@@ -247,14 +249,16 @@ function dropClaw() {
 }
 
 function resetClaw() {
-    console.log(crossbar.position.z);
-    // while (crossbar.position.z != 0) {
-    //     if (crossbar.position.z > 0) {
-    //         crossbar.position.z -= 1;
-    //     } else {
-    //         crossbar.position.z += 1;
-    //     }
-    // }
+    var position = {x: slider.position.x, z: crossbar.position.z };
+    var target = {x: 0, z: 0 };
+    var tween = new TWEEN.Tween(position).to(target, 1000);
+
+    tween.onUpdate(() => {
+        crossbar.position.z = position.z;
+        slider.position.x = position.x;
+    });
+
+    tween.start();
 }
 
 function setEgocentric() {
@@ -283,6 +287,7 @@ function init() {
 	renderer.setSize(canvasWidth, canvasHeight);
 	renderer.setClearColor( 0xAAAAAA, 1.0 );
 
+
     // You also want a camera. The camera has a default position, but you most likely want to change this.
 	// You'll also want to allow a viewpoint that is reminiscent of using the machine as described in the pdf
 	// This might include a different position and/or a different field of view etc.
@@ -292,6 +297,7 @@ function init() {
 	cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
 	camera.position.set( 0, 900, 1000);
 	cameraControls.target.set(4,500,92);
+
 }
 
 	// We want our document object model (a javascript / HTML construct) to include our canvas
@@ -317,6 +323,7 @@ function render() {
 	cameraControls.update(delta);
 
 	renderer.render(scene, camera);
+    TWEEN.update();
 }
 
 	// Since we're such talented programmers, we include some exception handeling in case we break something
