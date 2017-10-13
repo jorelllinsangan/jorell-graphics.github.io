@@ -132,6 +132,7 @@ function generateWalls(scene) {
     wall.position.set(-148.5, 650, 0);
     wall.rotation.y = Math.PI/2;
 
+    scene.add(wall);
     // roof
     wall = new THREE.Mesh(new THREE.BoxGeometry(300, 5, 300), roofMaterial);
     wall.position.set(0, 852.5, 0);
