@@ -11,6 +11,7 @@
 
 
  /*global variables, coordinates, clock etc.  */
+
 var camera, scene, renderer;
 var cameraControls;
 var egocentric = false;
@@ -63,6 +64,7 @@ function drawClawMachine() {
     generateWalls(scene, bodyMaterial);
     generateClawMechanism(scene);
     generateControlPanel(scene, bodyMaterial);
+    generateChute(scene);
 
 }
 
@@ -98,13 +100,24 @@ function generateStands(scene, bodyMaterial) {
 
 function generateWalls(scene) {
     var wallMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, transparent: true, opacity: 0.5})
+    var roofMaterial = new THREE.MeshLambertMaterial({color: 0xff00ff});
+
+    // front wall
+    var chuteWallOrigin = new THREE.Object3D();
+    chuteWallOrigin.position.set(0, 650, 149);
+    var topLeft = new THREE.Mesh(new THREE.BoxGeometry(100, 300, 5), wallMaterial);
+    topLeft.position.set(-50, 50, 0);
+    var topRight = new THREE.Mesh(new THREE.BoxGeometry(100, 400, 5), wallMaterial);
+    topRight.position.set(50, 0, 0);
+    var chuteWallParts = [topLeft, topRight];
+
+    chuteWallParts.forEach((piece) => {
+        chuteWallOrigin.add(piece);
+    })
+
+    scene.add(chuteWallOrigin);
 
     var wall = new THREE.Mesh(new THREE.BoxGeometry(200, 400, 5), wallMaterial);
-    wall.position.set(0, 650, 148.5);
-
-    scene.add(wall);
-
-    wall = new THREE.Mesh(new THREE.BoxGeometry(200, 400, 5), wallMaterial);
     wall.position.set(0, 650, -148.5);
 
     scene.add(wall);
@@ -119,6 +132,10 @@ function generateWalls(scene) {
     wall.position.set(-148.5, 650, 0);
     wall.rotation.y = Math.PI/2;
 
+    // roof
+    wall = new THREE.Mesh(new THREE.BoxGeometry(300, 5, 300), roofMaterial);
+    wall.position.set(0, 852.5, 0);
+
     scene.add(wall);
 
 }
@@ -128,6 +145,7 @@ function generateClawMechanism (scene) {
     var crossbarMaterial = new THREE.MeshLambertMaterial({color: 0xfff000});
     var sliderMaterial = new THREE.MeshLambertMaterial({color: 0x000fff});
     var clawShaftMaterial = new THREE.MeshLambertMaterial({color: 0xf00000});
+    var clawMaterial = new THREE.MeshLambertMaterial({color: 0x00ff00});
 
     var track1 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
     var track2 = new THREE.Mesh(new THREE.BoxGeometry(20, 20, 200), trackMaterial);
@@ -144,8 +162,13 @@ function generateClawMechanism (scene) {
 
     clawShaft = new THREE.Mesh(new THREE.BoxGeometry(5, 100, 5), clawShaftMaterial)
     clawShaft.position.set(0,-55,0);
-    slider.add(clawShaft);
 
+    claw = new THREE.Mesh(new THREE.CylinderGeometry(10, 20, 10), clawMaterial);
+    claw.position.set(0, -50, 0);
+    clawShaft.add(claw);
+
+
+    slider.add(clawShaft);
 
     track1.add(crossbar);
 
@@ -173,7 +196,22 @@ function generateControlPanel(scene, bodyMaterial) {
     joystick.add(handleHead);
     baseJoystick.add(joystick)
     scene.add(baseJoystick);
+}
 
+function generateChute(scene) {
+    var chuteMaterial1 = new THREE.MeshLambertMaterial({color: 0xffffff, transparent: true, opacity: 0.5});
+    var chuteMaterial2 = new THREE.MeshLambertMaterial({color: 0xfff000, transparent: true, opacity: 0.5});
+    var chuteWall1 = new THREE.Mesh(new THREE.BoxGeometry(5, 100, 125), chuteMaterial1);
+    var chuteWall2 = new THREE.Mesh(new THREE.BoxGeometry(5, 100, 150), chuteMaterial2);
+
+    chuteWall1.position.set(2.5, 500, 83.5);
+    chuteWall1.rotation.y = -Math.PI/1;
+
+    chuteWall2.rotation.y = Math.PI/2;
+    chuteWall2.position.set(75, 0, 60);
+
+    chuteWall1.add(chuteWall2);
+    scene.add(chuteWall1);
 }
 
 document.onkeydown = (key) => {
@@ -217,7 +255,6 @@ A sequence of animations is needed. Can't just do a for loop
  */
 function dropClaw() {
 
-    console.log(clawShaft.scale.clone());
     var scale = {yScale: clawShaft.scale.y, yPos: clawShaft.position.y };
     var targetScale = { yScale: 2.5 , yPos: -125 };
     var tween = new TWEEN.Tween(scale).to(targetScale, 3000);
@@ -225,11 +262,11 @@ function dropClaw() {
     tween.onUpdate(() => {
         clawShaft.scale.y = scale.yScale;
         clawShaft.position.y = scale.yPos
-    })
+    });
 
     tween.onComplete(() => {
         deliverPrize();
-    })
+    });
 
     tween.start();
 }
@@ -237,7 +274,7 @@ function dropClaw() {
 function deliverPrize () {
     var position = {x: slider.position.x, z: crossbar.position.z };
     var target = {x: -75, z: 100 };
-    var tween = new TWEEN.Tween(position).to(target, 500);
+    var tween = new TWEEN.Tween(position).to(target, 1000);
 
     tween.onUpdate(() => {
        crossbar.position.z = position.z;
