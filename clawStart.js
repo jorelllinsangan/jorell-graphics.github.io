@@ -58,11 +58,27 @@ function drawClawMachine() {
 	var refPointMaterial = new THREE.MeshLambertMaterial();
 	refPointMaterial.color.setRGB(1,0,0);
 
+	generateBlenderMesh("base.json", scene. bodyMaterial);
+	// blenderBase.position.set(200, 100, 0);
+	// scene.add(blenderBase);
 	generateBase(scene, bodyMaterial);
     generateStands(scene, bodyMaterial);
     generateWalls(scene, bodyMaterial);
     generateClawMechanism(scene);
     generateControlPanel(scene, bodyMaterial);
+
+}
+
+function generateBlenderMesh (meshJson, scene, bodyMaterial) {
+
+    var mesh = null;
+    var loader = new THREE.JSONLoader();
+    loader.load('./Blender Mesh/' + meshJson, (geom) => {
+
+        mesh = new THREE.Mesh(geom, );
+        mesh.position.set(400, 200, 0);
+        scene.add(mesh);
+    });
 
 }
 
