@@ -18,35 +18,35 @@ var egocentric = false;
 
 var clock = new THREE.Clock();
 function fillScene() {
-	scene = new THREE.Scene();
-	scene.fog = new THREE.Fog( 0x808080, 2000, 4000 );
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog( 0x808080, 2000, 4000 );
 
-	// Some basic default lighting - in A2 complexity will be added
+    // Some basic default lighting - in A2 complexity will be added
 
-	scene.add( new THREE.AmbientLight( 0x222222 ) );
+    scene.add( new THREE.AmbientLight( 0x222222 ) );
 
-	var light = new THREE.DirectionalLight( 0xffffff, 0.7 );
-	light.position.set( 200, 500, 500 );
+    var light = new THREE.DirectionalLight( 0xffffff, 0.7 );
+    light.position.set( 200, 500, 500 );
 
-	scene.add( light );
+    scene.add( light );
 
-	light = new THREE.DirectionalLight( 0xffffff, 0.9 );
-	light.position.set( -200, -100, -400 );
+    //A simple grid floor, the variables hint at the plane that this lies within
+    // Later on we might install new flooring.
+    // var gridXZ = new THREE.GridHelper(2000, 100, new THREE.Color(0xCCCCCC), new THREE.Color(0x888888));
+    // scene.add(gridXZ);
 
-	scene.add( light );
+    var floor = initFloor();
+    scene.add(floor);
 
-//A simple grid floor, the variables hint at the plane that this lies within
-// Later on we might install new flooring.
- var gridXZ = new THREE.GridHelper(2000, 100, new THREE.Color(0xCCCCCC), new THREE.Color(0x888888));
- scene.add(gridXZ);
+    //Visualize the Axes - Useful for debugging, can turn this off if desired
+    var axes = new THREE.AxisHelper(150);
+    axes.position.y = 1;
+    scene.add(axes);
 
- //Visualize the Axes - Useful for debugging, can turn this off if desired
- var axes = new THREE.AxisHelper(150);
- axes.position.y = 1;
- scene.add(axes);
-
- drawClawMachine();
+    drawClawMachine();
 }
+
+
 
 function drawClawMachine() {
 
@@ -59,13 +59,49 @@ function drawClawMachine() {
 	var refPointMaterial = new THREE.MeshLambertMaterial();
 	refPointMaterial.color.setRGB(1,0,0);
 
-	generateBase(scene, bodyMaterial);
+    generateBase(scene, bodyMaterial);
     generateStands(scene, bodyMaterial);
     generateWalls(scene, bodyMaterial);
     generateClawMechanism(scene);
     generateControlPanel(scene, bodyMaterial);
     generateChute(scene);
+    builder(scene);
+    initMesh()
+    console.log("Hello");
+}
 
+var mesh = null;
+function initMesh() {
+    var loader = new THREE.JSONLoader();
+    var bodyMaterial = new THREE.MeshLambertMaterial();
+    bodyMaterial.color.setRGB( 0.5, 0.5, 0.5 );
+    group = new THREE.Object3D();
+    loader.load('./Blender Mesh/base.json', function(geometry, materials) {
+        mesh = new THREE.Mesh(geometry, bodyMaterial);
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = 100;
+        mesh.translation = geometry.center();
+        console.log("Adding mesh");
+        group.add(mesh);
+        group.position.set(200, 200, 0);
+        scene.add(group);
+    });
+}
+
+function initFloor () {
+    var textureLoader = new THREE.TextureLoader();
+    // var maxAnisotropy = renderer.getMaxAnisotropy();
+    var texture1 = textureLoader.load( "marble.png" );
+    var material1 = new THREE.MeshPhongMaterial( { color: 0xffffff, map: texture1, reflectivity: 0.8} );
+    // texture1.anisotropy = maxAnisotropy;
+    texture1.wrapS = texture1.wrapT = THREE.RepeatWrapping;
+    texture1.repeat.set( 512, 512 );
+
+    var geometry = new THREE.PlaneBufferGeometry( 300, 300 );
+    var mesh1 = new THREE.Mesh( geometry, material1 );
+    mesh1.rotation.x = - Math.PI / 2;
+    mesh1.scale.set( 1000, 1000, 1000 );
+
+    return mesh1;
 }
 
 function generateBase(scene, bodyMaterial) {
@@ -161,16 +197,18 @@ function generateClawMechanism (scene) {
     slider.position.set(0, -10, 0);
     crossbar.add(slider);
 
+    clawBase = new THREE.Object3D();
+
+
     clawShaft = new THREE.Mesh(new THREE.BoxGeometry(5, 100, 5), clawShaftMaterial)
     clawShaft.position.set(0,-55,0);
 
     claw = new THREE.Mesh(new THREE.CylinderGeometry(10, 20, 10), clawMaterial);
-    claw.position.set(0, -50, 0);
-    clawShaft.add(claw);
+    claw.position.set(0, -110, 0);
 
-
-    slider.add(clawShaft);
-
+    clawBase.add(clawShaft);
+    clawBase.add(claw);
+    slider.add(clawBase);
     track1.add(crossbar);
 
     scene.add(track1);
@@ -215,6 +253,58 @@ function generateChute(scene) {
     scene.add(chuteWall1);
 }
 
+function builder(scene) {
+    baseBuilder = new THREE.Object3D();
+    baseBuilder.position.set(200,500,200);
+    var textureLoader = new THREE.TextureLoader();
+    var texture = textureLoader.load("marble.png");
+    var material = new THREE.MeshPhongMaterial( {
+       color: 0xffffff,
+       map: texture,
+    });
+
+
+    sphere = new THREE.SphereGeometry(10);
+    mesh = new THREE.Mesh(sphere, material);
+
+    // returns a mesh of a spherical knuckle
+    function generateKnuckle (size) {
+        var knuckle = new THREE.SphereGeometry(size);
+        var mesh = new THREE.Mesh(knuckle, material);
+        return mesh
+    }
+
+    // returns a mesh of a cylinder
+    function generateFinger (x,y,z) {
+        var finger = new THREE.CylinderGeometry(x,y,z);
+        var mesh = new THREE.Mesh(finger, material);
+        return mesh;
+    }
+
+    knuckles = [];
+    fingers = [];
+    for (var i = 0; i < 3; i++) {
+        knuckles.push(generateKnuckle(2));
+        fingers.push(generateFinger(1.5,1.5,10));
+    }
+
+    var positions = [[0, -9, -7], [-6, -9, 3], [6, -9, 3]];
+    var rotations = [[Math.PI/4, 0, 0], [0, Math.PI/4, -Math.PI/4], [0, -Math.PI/4, Math.PI/4]];
+    knuckles.map(function(e,i) {
+       fingers[i].position.set(0,-6.75,0);
+       e.position.set(positions[i][0],positions[i][1],positions[i][2]);
+       e.rotation.x = rotations[i][0];
+       e.rotation.y = rotations[i][1];
+       e.rotation.z = rotations[i][2];
+       e.add(fingers[i]);
+       mesh.add(e);
+    });
+
+
+    baseBuilder.add(mesh);
+    scene.add(baseBuilder);
+}
+
 document.onkeydown = (key) => {
     console.log(key.keyCode);
     var crossbarLimit = 90;
@@ -256,13 +346,14 @@ A sequence of animations is needed. Can't just do a for loop
  */
 function dropClaw() {
 
-    var scale = {yScale: clawShaft.scale.y, yPos: clawShaft.position.y };
-    var targetScale = { yScale: 2.5 , yPos: -125 };
+    var scale = {yScale: clawShaft.scale.y, yPos: clawShaft.position.y, clawPos: claw.position.y };
+    var targetScale = { yScale: 2.5 , yPos: -125 , clawPos: -250};
     var tween = new TWEEN.Tween(scale).to(targetScale, 3000);
 
     tween.onUpdate(() => {
         clawShaft.scale.y = scale.yScale;
-        clawShaft.position.y = scale.yPos
+        clawShaft.position.y = scale.yPos;
+        claw.position.y = scale.clawPos;
     });
 
     tween.onComplete(() => {
@@ -290,13 +381,30 @@ function deliverPrize () {
 }
 
 function resetClaw() {
-    var position = {x: slider.position.x, z: crossbar.position.z };
-    var target = {x: 0, z: 0 };
+    var position = {
+        x: slider.position.x,
+        z: crossbar.position.z,
+        yScale: clawShaft.scale.y,
+        yPos: clawShaft.position.y,
+        clawPos: claw.position.y
+    };
+
+    var target = {
+        x: 0,
+        z: 0,
+        yScale: 1,
+        yPos: -55,
+        clawPos: -110
+    };
+
     var tween = new TWEEN.Tween(position).to(target, 1000);
 
     tween.onUpdate(() => {
         crossbar.position.z = position.z;
         slider.position.x = position.x;
+        clawShaft.scale.y = position.yScale;
+        clawShaft.position.y = position.yPos;
+        claw.position.y = position.clawPos;
     });
 
     tween.start();
@@ -362,7 +470,6 @@ function animate() {
 function render() {
 	var delta = clock.getDelta();
 	cameraControls.update(delta);
-
 	renderer.render(scene, camera);
     TWEEN.update();
 }
