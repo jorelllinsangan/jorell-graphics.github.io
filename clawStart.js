@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-/* COMP 3490 A1 Skeleton for Claw Machine (Barebones Edition) 
+/* COMP 3490 A1 Skeleton for Claw Machine (Barebones Edition)
  * Note that you may make use of the skeleton provided, or start from scratch.
  * The choice is up to you.
  * Read the assignment directions carefully
@@ -24,7 +24,7 @@ function fillScene() {
     Physijs.scripts.worker = 'physijs_worker.js';
     Physijs.scripts.ammo = 'ammo.js';
     scene = new Physijs.Scene();
-    scene.setGravity(new THREE.Vector3(0,-100,0));
+    scene.setGravity(new THREE.Vector3(0,-30,0));
     scene.fog = new THREE.Fog( 0x808080, 2000, 4000 );
 
     // Some basic default lighting - in A2 complexity will be added
@@ -104,6 +104,7 @@ function fillScene() {
     button.rotation.x = Math.PI/4;
     scene.add(button);
 
+
     var spriteMaterial = new THREE.SpriteMaterial({
         map: new THREE.ImageUtils.loadTexture('assets/glow.png'),
         useScreenCoordinates: false,
@@ -112,7 +113,22 @@ function fillScene() {
     var sprite = new THREE.Sprite(spriteMaterial);
     sprite.scale.set(50, 50, 1.0);
     button.add(sprite);
-    drawClawMachine(true);
+
+    generateMarquee(scene);
+    // createCoinSlot(scene);
+    drawClawMachine();
+    var coinSlotBase = new THREE.Object3D();
+    var left = new Physijs.BoxMesh(new THREE.BoxGeometry(10, 20, 2.5), new THREE.MeshLambertMaterial({color: 0x000088}), 0);
+    var right = new Physijs.BoxMesh(new THREE.BoxGeometry(5,20,2.5), new THREE.MeshLambertMaterial({color: 0x000088}), 0);
+    coinSlotBase.add(left);
+    coinSlotBase.add(right);
+    coinSlotBase.position.set(110, 300, 150);
+
+    var sprite2 = new THREE.Sprite(spriteMaterial);
+    sprite2.scale.set(50, 50, 1.0);
+    coinSlotBase.add(sprite2);
+    right.position.set(10, 0, 0);
+    scene.add(coinSlotBase);
 }
 
 function drawClawMachine(prizes) {
@@ -130,33 +146,43 @@ function drawClawMachine(prizes) {
     generateClawMechanism(scene);
     generateControlPanel(scene, bodyMaterial);
     generateChute(scene);
+
     if (prizes) {
         createPrizes(scene, 50);
     }
 }
 
-function chuteSpotLight (scene) {
-    chuteLight = new THREE.SpotLight(0xfff000);
-    chuteLight.penumbra = 1;
-    chuteLight.angle = Math.PI/10;
-    chuteLight.position.set(0, 800, 50);
+function generateMarquee (scene) {
+    var loader = new THREE.FontLoader();
+    loader.load( 'assets/dogefont2.json', function ( font ) {
+        var xMid, text;
+        var textShape = new THREE.BufferGeometry();
+        var matLite = new THREE.MeshPhongMaterial( {
+            color: 0xffd700, specular:0x996633, shininess:100,
+            side: THREE.DoubleSide
+        } );
+        var message = "DOGE MINER";
+        var shapes = font.generateShapes( message, 30, 2 );
+        var geometry = new THREE.ShapeGeometry( shapes );
+        geometry.computeBoundingBox();
+        xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
+        geometry.translate( xMid, 0, 0 );
+        textShape.fromGeometry( geometry );
+        text = new THREE.Mesh( textShape, matLite );
+        text.position.set(0,810,154);
+        // text.rotateY(Math.PI);
+        scene.add( text );
+        var marquee1 = new THREE.PointLight(0x00ff00,5,100);
+        marquee1.position.set(0,5,20);
+        text.add(marquee1);
+        var marquee2 = new THREE.PointLight(0x00ff00,5,100);
+        marquee2.position.set(-50,5,20);
+        text.add(marquee2);
+        var marquee3 = new THREE.PointLight(0x00ff00,5,100);
+        marquee3.position.set(60,5,20);
+        text.add(marquee3);
+    } );
 
-    chuteLight.castShadow = true;
-
-    chuteLight.shadow.camera.near = 1;
-    chuteLight.shadow.camera.far = 300;
-    chuteLight.shadow.camera.left = 0;
-    chuteLight.shadow.camera.bottom = 0;
-    chuteLight.shadow.camera.right = 50;
-    chuteLight.shadow.camera.top = 50;
-
-    chuteLight.shadow.mapSize.width = 1024;
-    chuteLight.shadow.mapSize.height  = 1024;
-
-
-    var helper = new THREE.CameraHelper(chuteLight.shadow.camera);
-    scene.add( chuteLight );
-    scene.add(helper);
 }
 
 function createPrizes(scene, numPrizes) {
@@ -178,12 +204,13 @@ function createPrizes(scene, numPrizes) {
     sphereGeom = new THREE.SphereGeometry(20,32,32);
     var scaler = 10;
     cone_geometry = new THREE.CylinderGeometry( 0 * scaler, 2  * scaler, 4  * scaler, 32  * scaler )
+    coinGeom = new THREE.CylinderGeometry(20,20,3, 32);
 
     for (var i = 0; i < numPrizes; i ++) {
         zPrice = getRandomInt(-100, 100);
         yPrice = getRandomInt(500, 550);
         xPrice = zPrice >= 20 ? getRandomInt(25, 100) : getRandomInt(-100, 100);
-        switch (getRandomInt(0,1)) {
+        switch (getRandomInt(0,3)) {
             case 0:
                 prize = new Physijs.BoxMesh(boxGeom, pMat);
                 break;
@@ -192,6 +219,10 @@ function createPrizes(scene, numPrizes) {
                 break;
             case 2:
                 prize = new Physijs.ConeMesh(cone_geometry, pMat);
+                break;
+            case 3:
+                // pMat.repeat.scale(1, 1);
+                prize = new Physijs.CylinderMesh(coinGeom, pMat);
                 break;
         }
 
@@ -218,6 +249,35 @@ function initMesh() {
     });
 }
 
+
+function generateReflection () {
+
+    var textureLoader2 = new THREE.TextureLoader();
+
+    var texture2 = textureLoader2.load( "assets/reflectionblurred.png" );
+    var material2 = Physijs.createMaterial(new THREE.MeshPhongMaterial( {map: texture2, reflectivity: 0.8} ), .8, .4);
+
+    var reflectionGeometry = new THREE.PlaneGeometry( 300, 500 );
+    var reflection = new Physijs.PlaneMesh( reflectionGeometry, material2, 0 );
+
+    reflection.position.set(0,10, 400);
+    reflection.scale.set(1,1,1);
+    reflection.rotation.x = - Math.PI / 2;
+    reflection.rotation.z = - Math.PI;
+    reflection.recieveShadow = true;
+
+    scene.add(reflection)
+}
+
+function createCoinSlot (scene) {
+    left = new Physijs.BoxMesh(new THREE.BoxGeometry(10, 20, 5), {color: 0xfff000}, 0);
+    right = new Physijs.BoxMesh(new THREE.BoxGeometry(5,10,5), {color: 0xfff000}, 0);
+    left.position.set(300, 350, 0);
+    right.position.set(300, 350, 0);
+    scene.add(left);
+    scene.add(right);
+}
+
 function initFloor () {
     var textureLoader = new THREE.TextureLoader();
     // var maxAnisotropy = renderer.getMaxAnisotropy();
@@ -239,6 +299,7 @@ function initFloor () {
        scene.remove(o);
     });
 
+    generateReflection(scene);
     return mesh1;
 }
 
@@ -521,7 +582,7 @@ function builder(scene) {
 function dropClaw() {
 
     var scale = {yScale: clawShaft.scale.y, yPos: clawShaft.position.y, clawPos: claw.position.y };
-    var targetScale = { yScale: 2.5 , yPos: -125 , clawPos: -250};
+    var targetScale = { yScale: 2.5 , yPos: -125  , clawPos: -250};
     var tween = new TWEEN.Tween(scale).to(targetScale, 3000);
 
     tween.onUpdate(() => {
